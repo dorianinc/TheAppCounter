@@ -60,6 +60,7 @@ body {
   border-radius: 10px;
   background-color: #9e9e9e;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 #number-display {

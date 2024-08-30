@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "d4",
     "d6",
     "d8",
-    "/",
+    "÷",
     "d10",
     "d12",
     "d20",
@@ -46,11 +46,13 @@ class ListNode {
   }
 }
 
-let equation = "0";
-let currentState = "0";
-let prevState = "0";
-let lastKey = null;
-const functionKeys = ["/", "x", "-", "+", "Enter"];
+const state = {
+  equation: null,
+  currentState: "0",
+  prevState: "0",
+  lastKey: null,
+};
+const operationKeys = ["÷", "x", "-", "+", "Enter"];
 const diceKeys = ["d%", "dx", "d4", "d6", "d8", "d10", "d12", "d20"];
 
 const initializeAppContainer = () => {
@@ -64,7 +66,7 @@ const setupDisplayScreen = () => {
 
   const numberDisplay = document.createElement("p");
   numberDisplay.setAttribute("id", "number-display");
-  numberDisplay.innerText = currentState;
+  numberDisplay.innerText = state.currentState;
 
   screen.append(numberDisplay);
   return screen;
@@ -76,89 +78,96 @@ const setupButtonsContainer = () => {
   return buttons;
 };
 
-const isValidKey = (value) => {
+const isValid = (value) => {
+  // if current value is a dice
   if (diceKeys.includes(value)) {
-    if (diceKeys.includes(lastKey)) {
-      return false;
-    }
-
-    if (!isNaN(lastKey) && currentState !== "0") {
+    // dice cant follow dice
+    if (diceKeys.includes(state.lastKey)) {
       return false;
     }
   }
 
-  if (functionKeys.includes(value)) {
-    if (lastKey === null || functionKeys.includes(lastKey)) {
+  // if current value is a function
+  if (operationKeys.includes(value)) {
+    // function key cant start from 0 or follow function key
+    if (state.currentState === "0" || operationKeys.includes(state.lastKey)) {
       return false;
     }
   }
 
+  // if number
   if (!isNaN(value)) {
-    if (diceKeys.includes(lastKey)) {
+    // number cant follow dice key
+    if (diceKeys.includes(state.lastKey)) {
       return false;
     }
   }
-
   return true;
 };
 
+const resetCalc = () => {
+  state.prevState = "0";
+  state.currentState = "0";
+  state.lastKey = null;
+};
+
+const deletePrev = () => {
+  state.currentState = state.prevState;
+  if (state.currentState === "0") {
+    state.lastKey = null;
+  }
+};
+
+const rollDice = (diceNotation) => {
+  let total = 0;
+  const [multiplierStr, diceSizeStr] = diceNotation.split("d");
+  const multiplier = Number(multiplierStr);
+  const diceSize = Number(diceSizeStr);
+
+  for (let i = 0; i < multiplier; i++) {
+    total += Math.floor(Math.random() * diceSize) + 1;
+  }
+
+  return total;
+};
+
 const handleDisplay = (value) => {
-  if (!isValidKey(value)) return;
+  if (!isValid(value)) return;
 
-  // if we're stating a clean equation at 0...
   if (value === "AC") {
-    prevState = "0";
-    currentState = "0";
-    lastKey = null;
-    // if del === revert to previous state
+    resetCalc();
   } else if (value === "del") {
-    currentState = prevState;
-    if (currentState === "0") {
-      lastKey = null;
-    }
+    deletePrev();
   } else {
-    if (lastKey === null) {
-      if (diceKeys.includes(value)) {
-        if (lastKey === null || isNaN(lastKey)) {
-          lastKey = value;
-          value = `1${value}`;
-        }
-      } else {
-        lastKey = value;
-      }
-
-      prevState = currentState;
-      currentState = value;
+    if (
+      diceKeys.includes(value) &&
+      (isNaN(state.lastKey) || state.lastKey === null)
+    ) {
+      state.lastKey = value;
+      value = `1${value}`;
     } else {
-      if (diceKeys.includes(value)) {
-        if (lastKey === null || isNaN(lastKey)) {
-          lastKey = value;
-          value = `1${value}`;
-        }
-      } else {
-        lastKey = value;
-      }
-      prevState = currentState;
-      currentState += value;
+      state.lastKey = value;
+    }
+    state.prevState = state.currentState;
+    if (state.lastKey === null || state.currentState === "0") {
+      state.currentState = value;
+    } else {
+      state.currentState += value;
     }
   }
 
-  // console.log("🖥️ console 2 => lastKey: ", lastKey);
-  // console.log("🖥️ console 2 => prevState: ", prevState);
-  // console.log("🖥️ console 2 => currentState: ", currentState);
-
   let displayNumber = document.querySelector("#number-display");
-
-  displayNumber.innerText = currentState;
+  displayNumber.innerText = state.currentState;
 };
 
-const handleLogic = (event) => {
-  // const value = event.target.value;
-  // let displayNumber = document.querySelector("#number-display");
-  // displayValue.prevState = displayValue.currentState;
-  // displayValue.currentState = displayValue.currentState.concat(value);
-  // displayNumber.innerText = displayValue.currentState;
-  // console.log("🖥️  displayValue : ", displayValue);
+const handleLogic = () => {
+  let equation = state.currentState;
+  equation = equation.replace(/x/g, "*");
+  equation = equation.replace(/÷/g, "/");
+  equation = equation.replace(/(\d*)d(\d+)/g, (match) => rollDice(match));
+
+  let displayNumber = document.querySelector("#number-display");
+  displayNumber.innerText = eval(equation);
 };
 
 const createKey = (key) => {
@@ -171,7 +180,7 @@ const createKey = (key) => {
     button.classList.add("dice-keys");
   } else if (key === "del" || key === "AC") {
     button.classList.add("red-keys");
-  } else if (["/", "x", "-", "+"].includes(key)) {
+  } else if (["÷", "x", "-", "+"].includes(key)) {
     button.classList.add("function-keys");
   } else if (["(", ")"].includes(key)) {
     button.classList.add("parenthesis-keys");
@@ -189,14 +198,16 @@ const createKey = (key) => {
   }
 
   // Set the button text if it's not the Enter key
-  if (key !== "Enter") {
+  if (key === "Enter") {
+    button.addEventListener("click", (event) => {
+      handleLogic();
+    });
+  } else {
     button.innerText = key;
+    button.addEventListener("click", (event) => {
+      handleDisplay(event.target.value);
+    });
   }
-
-  button.addEventListener("click", (event) => {
-    handleDisplay(event.target.value);
-    handleLogic(event.target.value);
-  });
 
   return button;
 };
