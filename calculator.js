@@ -168,6 +168,7 @@ const handleLogic = () => {
 
   let displayNumber = document.querySelector("#number-display");
   displayNumber.innerText = eval(equation);
+  resetCalc()
 };
 
 const createKey = (key) => {
