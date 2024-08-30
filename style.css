@@ -6,11 +6,12 @@ body {
   background-color: #f4f4f4;
   height: 100vh;
   margin: 0;
+  padding: 0;
   box-sizing: border-box;
   background-color: grey;
 }
 
-#site-name {
+#site-name { 
   font-family: "Passion One", sans-serif;
   font-optical-sizing: auto;
   font-style: normal;
@@ -23,14 +24,11 @@ body {
   text-align: center;
   background-color: #f4f4f4;
   background-color: grey;
-
   padding: 20px;
   font-family: Arial, sans-serif;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  margin: 0;
 }
 
 .app {
@@ -53,6 +51,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: nowrap;
   margin: 0 auto;
   height: 100px;
   width: 400px;
@@ -64,6 +63,9 @@ body {
 }
 
 #number-display {
+  display: flex;
+  align-items: center; 
+  flex-wrap: nowrap;
   font-family: "Orbitron", sans-serif;
   font-optical-sizing: auto;
   font-size: 50px;
